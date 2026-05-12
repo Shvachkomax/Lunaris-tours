@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LUNARIS — Туры на Луну</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --neon-pink: #ff2d95;
+      --neon-cyan: #00f0ff;
+      --neon-purple: #b400ff;
+      --neon-yellow: #ffe600;
+      --dark-bg: #0a0015;
+      --card-bg: rgba(10, 0, 30, 0.8);
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--dark-bg);
+      color: #fff;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── Canvas ── */
+    #particle-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0015; }
+    ::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 3px; box-shadow: 0 0 12px var(--neon-cyan); }
+
+    /* ── Header ── */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 0, 21, 0.6);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+    }
+
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradShift 4s ease infinite;
+      text-shadow: none;
+      filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.3));
+      letter-spacing: 4px;
+    }
+
+    @keyframes gradShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    nav { display: flex; gap: 36px; align-items: center; }
+    nav a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      position: relative;
+      transition: 0.3s;
+    }
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 0;
+      width: 0; height: 2px;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 12px var(--neon-cyan);
+      transition: 0.3s;
+    }
+    nav a:hover {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 12px var(--neon-cyan);
+    }
+    nav a:hover::after { width: 100%; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 20px var(--neon-cyan), 0 0 60px var(--neon-cyan);
+      margin-bottom: 16px;
+      animation: flicker 3s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+      20%, 24%, 55% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(52px, 10vw, 120px);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff, var(--neon-cyan), var(--neon-pink), var(--neon-purple), #fff);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradShift 6s ease infinite;
+      filter: drop-shadow(0 0 40px rgba(0, 240, 255, 0.3));
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: rgba(255,255,255,0.5);
+      max-width: 600px;
+      margin: 24px 0 48px;
+      letter-spacing: 2px;
+    }
+
+    /* ── Button ── */
+    .btn {
+      font-family: 'Orbitron', sans-serif;
+      padding: 18px 52px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #fff;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: 0.3s;
+      z-index: 1;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple), var(--neon-cyan));
+      background-size: 400% 400%;
+      border-radius: 6px;
+      z-index: -2;
+      animation: gradShift 3s ease infinite;
+      opacity: 0;
+      transition: 0.3s;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px; right: 2px; bottom: 2px;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      border-radius: 3px;
+      z-index: -1;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 40px rgba(255, 45, 149, 0.4), 0 0 80px rgba(180, 0, 255, 0.2);
+    }
+    .btn:hover::before { opacity: 1; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+    .btn-outline::after { display: none; }
+    .btn-outline::before { display: none; }
+    .btn-outline:hover {
+      background: rgba(0, 240, 255, 0.1);
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.3), inset 0 0 30px rgba(0, 240, 255, 0.1);
+      color: #fff;
+      border-color: var(--neon-cyan);
+    }
+
+    .btn-group { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+
+    /* ── Scanline overlay ── */
+    .scanlines {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 999;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 240, 255, 0.015) 2px,
+        rgba(0, 240, 255, 0.015) 4px
+      );
+    }
+
+    /* ── Sections ── */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 120px 60px;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(32px, 5vw, 56px);
+      text-align: center;
+      margin-bottom: 60px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.2));
+    }
+
+    /* ── Cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      border-radius: 12px;
+      padding: 40px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: 0.4s;
+      backdrop-filter: blur(8px);
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg, transparent, var(--neon-cyan), transparent, var(--neon-pink), transparent);
+      animation: spinGlow 8s linear infinite;
+      opacity: 0;
+      transition: 0.4s;
+      z-index: 0;
+    }
+    .card:hover::before { opacity: 0.12; }
+    .card:hover {
+      border-color: var(--neon-cyan);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0, 240, 255, 0.15);
+    }
+    .card > * { position: relative; z-index: 1; }
+
+    @keyframes spinGlow {
+      to { transform: rotate(360deg); }
+    }
+
+    .card-icon {
+      font-size: 52px;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .card h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px;
+      margin-bottom: 12px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+    .card p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.6;
+    }
+    .card .price {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      margin-top: 16px;
+      background: linear-gradient(135deg, var(--neon-yellow), var(--neon-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ── Timeline ── */
+    .timeline {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+      box-shadow: 0 0 20px var(--neon-cyan);
+      transform: translateX(-50%);
+    }
+    .timeline-item {
+      display: flex;
+      justify-content: flex-end;
+      padding: 30px 0;
+      position: relative;
+      width: 50%;
+    }
+    .timeline-item:nth-child(odd) {
+      align-self: flex-start;
+      justify-content: flex-start;
+      margin-left: 50%;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -8px;
+      top: 36px;
+      width: 16px; height: 16px;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 24px var(--neon-cyan), 0 0 48px var(--neon-cyan);
+      animation: pulse 2s infinite;
+    }
+    .timeline-item:nth-child(odd) .timeline-dot { left: auto; right: -8px; }
+    .timeline-item:nth-child(even) { padding-right: 40px; }
+    .timeline-item:nth-child(odd) { padding-left: 40px; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px var(--neon-cyan); }
+      50% { box-shadow: 0 0 40px var(--neon-cyan), 0 0 80px var(--neon-cyan); }
+    }
+    .timeline-content {
+      background: var(--card-bg);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      border-radius: 8px;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    .timeline-content h4 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--neon-pink);
+      margin-bottom: 8px;
+    }
+
+    /* ── Gallery ── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .gallery-item {
+      height: 280px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background-size: cover;
+      background-position: center;
+    }
+    .gallery-item .overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,0,21,0.9), transparent);
+      display: flex;
+      align-items: flex-end;
+      padding: 24px;
+      opacity: 0;
+      transition: 0.4s;
+    }
+    .gallery-item:hover .overlay { opacity: 1; }
+    .gallery-item:hover { border-color: var(--neon-cyan); box-shadow: 0 0 40px rgba(0,240,255,0.15); }
+    .gallery-item .overlay span {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 60px;
+      border-top: 1px solid rgba(0, 240, 255, 0.1);
+      color: rgba(255,255,255,0.3);
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      header { padding: 16px 24px; flex-direction: column; gap: 12px; }
+      nav { gap: 16px; }
+      nav a { font-size: 13px; }
+      section { padding: 60px 24px; }
+      .timeline::before { left: 20px; }
+      .timeline-item, .timeline-item:nth-child(odd) { width: 100%; margin-left: 0; padding-left: 50px; padding-right: 0; }
+      .timeline-item:nth-child(odd) .timeline-dot { left: 12px; right: auto; }
+      .timeline-dot { left: 12px; }
+    }
+
+    /* ── Glitch text ── */
+    .glitch {
+      position: relative;
+    }
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .glitch::before {
+      color: var(--neon-cyan);
+      animation: glitch1 3s infinite linear alternate-reverse;
+      clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+    }
+    .glitch::after {
+      color: var(--neon-pink);
+      animation: glitch2 2s infinite linear alternate-reverse;
+      clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+    }
+    @keyframes glitch1 {
+      0% { transform: translate(0); }
+      20% { transform: translate(-3px, 2px); }
+      40% { transform: translate(3px, -1px); }
+      60% { transform: translate(-1px, 3px); }
+      80% { transform: translate(2px, -2px); }
+      100% { transform: translate(-2px, 1px); }
+    }
+    @keyframes glitch2 {
+      0% { transform: translate(0); }
+      20% { transform: translate(3px, -2px); }
+      40% { transform: translate(-3px, 1px); }
+      60% { transform: translate(1px, -3px); }
+      80% { transform: translate(-2px, 2px); }
+      100% { transform: translate(2px, -1px); }
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 52px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 14px;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="particle-canvas"></canvas>
+  <div class="scanlines"></div>
+
+  <header>
+    <div class="logo">✦ LUNARIS</div>
+    <nav>
+      <a href="#tours">туры</a>
+      <a href="#about">маршрут</a>
+      <a href="#gallery">галерея</a>
+      <a href="#contact">контакты</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-subtitle">✦ 2026 — первый рейс</div>
+    <h1 class="glitch" data-text="ЛУНА ЖДЁТ">ЛУНА ЖДЁТ</h1>
+    <p>Забудьте о Земле. Пятизвёздочные отели на Луне, кратерные экскурсии и незабываемые закаты Земли.</p>
+    <div class="btn-group">
+      <button class="btn" onclick="document.querySelector('#tours').scrollIntoView({behavior:'smooth'})">Выбрать тур</button>
+      <button class="btn btn-outline" onclick="document.querySelector('#about').scrollIntoView({behavior:'smooth'})">Узнать больше</button>
+    </div>
+  </section>
+
+  <section id="tours">
+    <h2 class="section-title">✦ ТУРЫ</h2>
+    <div class="cards">
+      <div class="card">
+        <span class="card-icon">🚀</span>
+        <h3>Эконом</h3>
+        <p>Перелёт по системе Starship, обзорный полёт вокруг Луны, ужин с видом на Землю.</p>
+        <div class="price">$120,000</div>
+      </div>
+      <div class="card">
+        <span class="card-icon">🌙</span>
+        <h3>Люкс</h3>
+        <p>Неделя в кратерном отеле «Tranquility», экскурсия на ровере, выход в открытый космос.</p>
+        <div class="price">$480,000</div>
+      </div>
+      <div class="card">
+        <span class="card-icon">👑</span>
+        <h3>Президентский</h3>
+        <p>VIP-шаттл, частный апартамент с куполом, лунный гольф, фотосессия на фоне Земли.</p>
+        <div class="price">$1,200,000</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" style="background: rgba(0,240,255,0.02);">
+    <h2 class="section-title">✦ МАРШРУТ</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <h4>Старт</h4>
+          <p>Космодром «Байконур Восток». Предстартовая подготовка, скафандры, инструктаж.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <h4>Выход на орбиту</h4>
+          <p>9 минут до стратосферы. Отстыковка ступеней, невесомость, первый обзор Земли.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <h4>Перелёт</h4>
+          <p>3 дня в невесомости. Бары, кинозал, спа-капсулы и панорамные окна.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <h4>Прилунение</h4>
+          <p>Высадка в Море Спокойствия. Трансфер в отель. Добро пожаловать на Луну!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat1">0</div>
+      <div class="stat-label">Туристов</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat2">0</div>
+      <div class="stat-label">Рейсов</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat3">0</div>
+      <div class="stat-label">Звёзд</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat4">0</div>
+      <div class="stat-label">% счастья</div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <h2 class="section-title">✦ ГАЛЕРЕЯ</h2>
+    <div class="gallery">
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1614313913007-ee22c8a7e3dc?w=600&q=80')"><div class="overlay"><span>Кратер Тихо</span></div></div>
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?w=600&q=80')"><div class="overlay"><span>Вид на Землю</span></div></div>
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80')"><div class="overlay"><span>Старт ракеты</span></div></div>
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1541185934-01b600ea069c?w=600&q=80')"><div class="overlay"><span>Лунная база</span></div></div>
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=600&q=80')"><div class="overlay"><span>Млечный путь</span></div></div>
+      <div class="gallery-item" style="background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=600&q=80')"><div class="overlay"><span>Глубокий космос</span></div></div>
+    </div>
+  </section>
+
+  <footer id="contact">
+    <p style="font-size:18px;margin-bottom:8px;font-family:'Orbitron',sans-serif;color:var(--neon-cyan);text-shadow:0 0 20px var(--neon-cyan);">✦ LUNARIS</p>
+    <p>🚀 lunaris@moon.space  |  +7 (900) 777-07-07  |  ул. Циолковского, 42</p>
+    <p style="margin-top:20px;opacity:0.5;">© 2026 LUNARIS — Вселенная ждёт</p>
+  </footer>
+
+  <script>
+    // ── Particles ──
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const particles = [];
+    const NUM_PARTICLES = 140;
+
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        r: Math.random() * 2 + 0.5,
+        hue: Math.random() * 60 + 180,
+      });
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, W, H);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = W;
+        if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H;
+        if (p.y > H) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${0.4 + Math.random() * 0.4})`;
+        ctx.shadowColor = `hsl(${p.hue}, 100%, 60%)`;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+
+        // connections
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dx = p.x - p2.x;
+          const dy = p.y - p2.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < 20000) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `hsla(${(p.hue + p2.hue) / 2}, 100%, 60%, ${(1 - dist / 20000) * 0.2})`;
+            ctx.lineWidth = 0.5;
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
+
+    // ── Stars twinkle overlay ──
+    const starsCanvas = document.createElement('canvas');
+    starsCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;';
+    document.body.appendChild(starsCanvas);
+    const sctx = starsCanvas.getContext('2d');
+    let sW, sH;
+    function resizeStars() {
+      sW = starsCanvas.width = window.innerWidth;
+      sH = starsCanvas.height = window.innerHeight;
+    }
+    resizeStars();
+    window.addEventListener('resize', resizeStars);
+    const stars = [];
+    for (let i = 0; i < 200; i++) {
+      stars.push({
+        x: Math.random() * sW,
+        y: Math.random() * sH,
+        r: Math.random() * 1.5 + 0.3,
+        speed: Math.random() * 0.02 + 0.005,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+    function drawStars(time) {
+      sctx.clearRect(0, 0, sW, sH);
+      for (const s of stars) {
+        const alpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(time * s.speed + s.phase));
+        sctx.beginPath();
+        sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        sctx.fillStyle = `rgba(200, 230, 255, ${alpha})`;
+        sctx.shadowColor = 'rgba(0, 240, 255, 0.4)';
+        sctx.shadowBlur = 6;
+        sctx.fill();
+      }
+      requestAnimationFrame(drawStars);
+    }
+    drawStars(0);
+
+    // ── Counter animation ──
+    function animateCounter(el, target, suffix = '') {
+      let current = 0;
+      const step = Math.ceil(target / 60);
+      const interval = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(interval);
+        }
+        el.textContent = current.toLocaleString() + suffix;
+      }, 25);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter(document.getElementById('stat1'), 12847, '+');
+          animateCounter(document.getElementById('stat2'), 342);
+          animateCounter(document.getElementById('stat3'), 84400000, '+');
+          animateCounter(document.getElementById('stat4'), 99, '%');
+          observer.disconnect();
+        }
+      });
+    });
+    observer.observe(document.querySelector('.stats'));
+
+    // ── Mouse parallax for hero ──
+    document.querySelector('.hero').addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 20;
+      document.querySelector('.hero h1').style.transform = `translate(${x}px, ${y}px)`;
+      document.querySelector('.hero .hero-subtitle').style.transform = `translate(${-x * 0.5}px, ${-y * 0.5}px)`;
+    });
+  </script>
+</body>
+</html>
